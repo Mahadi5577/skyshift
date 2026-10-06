@@ -3,9 +3,15 @@ name: Deploy to Hugging Face
 # Manual: Actions tab -> "Deploy to Hugging Face" -> Run workflow. The upload runs on GitHub's
 # servers, so nothing large leaves your own computer. Needs the repository secret HF_TOKEN
 # (a Hugging Face write token) and the repository variable HF_SPACE (e.g. your-name/skyshift).
-# Full steps: docs/DEPLOY.md.
+# With "backup" on, the same token is also stored as a secret in the Space so the server can back
+# the Hunt database up to the private dataset <your-name>/skyshift-hunt. Full steps: docs/DEPLOY.md.
 on:
   workflow_dispatch:
+    inputs:
+      backup:
+        description: "Back the Hunt database up to a private Hugging Face dataset"
+        type: boolean
+        default: true
 
 jobs:
   deploy:
@@ -26,14 +32,21 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_SPACE: ${{ vars.HF_SPACE }}
+          BACKUP: ${{ inputs.backup }}
         run: |
           pip install huggingface_hub==2.1.1
           python - <<'EOF'
           import os
           from huggingface_hub import HfApi
           api = HfApi(token=os.environ["HF_TOKEN"])
-          space = os.environ["HF_SPACE"]
+          space = os.environ["HF_SPACE"].strip()
+          owner = space.split("/")[0]
           api.create_repo(space, repo_type="space", space_sdk="docker", exist_ok=True)
+          if os.environ["BACKUP"] == "true":
+              # Hidden from visitors; only the server code can read it (backend/backup.py).
+              api.add_space_secret(space, "HF_TOKEN", os.environ["HF_TOKEN"],
+                                   description="Writes the Hunt database backup")
+              api.add_space_variable(space, "SKYSHIFT_BACKUP_REPO", f"{owner}/skyshift-hunt")
           api.upload_folder(repo_id=space, repo_type="space", folder_path="space",
                             delete_patterns=["backend/**", "web/**", "scripts/**"],
                             commit_message=f"Deploy {os.environ['GITHUB_SHA'][:7]} from GitHub")

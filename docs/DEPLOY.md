@@ -43,7 +43,8 @@ computer.
    - **Variables** tab: add `HF_SPACE` = `your-hf-name/skyshift`.
 4. Open **Actions > Deploy to Hugging Face > Run workflow**. The workflow creates the Space if
    needed and uploads `backend/`, `web/`, `scripts/`, the `Dockerfile` and the Space's card
-   ([`deploy/huggingface/README.md`](../deploy/huggingface/README.md)).
+   ([`deploy/huggingface/README.md`](../deploy/huggingface/README.md)). With **backup** ticked
+   (the default), it also sets up the Hunt database backup described below.
 5. Hugging Face builds the image (about 5-10 minutes), then the app opens at
    `https://huggingface.co/spaces/your-hf-name/skyshift`. The first start precaches the tour
    and Hunt patches in the background. Watch `/api/health` until `precache` says `done`.
@@ -54,12 +55,13 @@ A free Space's disk is wiped every time it restarts or rebuilds. A Space also sl
 couple of days without visitors, and waking it is a restart. The download cache simply comes
 back, but players and the candidate board would be lost. Choose one:
 
-- **Free:** back the database up to a private dataset. In the Space's **Settings >
-  Variables and secrets**, add the secret `HF_TOKEN` (a token that may write to your
-  datasets; a fine-grained token limited to the one dataset is best) and the variable
-  `SKYSHIFT_BACKUP_REPO` = `your-hf-name/skyshift-hunt`. The server creates the private
-  dataset, restores from it at start-up, and uploads a copy every 10 minutes when something
-  changed and once more at shutdown. You can lose up to 10 minutes of play.
+- **Free (the workflow's default):** back the database up to a private dataset. The workflow
+  stores your token as the Space secret `HF_TOKEN` and sets the Space variable
+  `SKYSHIFT_BACKUP_REPO` = `your-hf-name/skyshift-hunt`. Space secrets are hidden from
+  visitors; only the server code reads it. The server creates the private dataset, restores
+  from it at start-up, and uploads a copy every 10 minutes when something changed and once
+  more at shutdown. You can lose up to 10 minutes of play. To do this by hand instead, untick
+  **backup** and add the two settings in the Space's **Settings > Variables and secrets**.
 - **Paid:** add persistent storage to the Space. It is mounted at `/data`, where the image
   already keeps its data.
 
