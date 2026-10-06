@@ -3,6 +3,11 @@
 Format: one section per release, newest first. `scripts/release_check.py` copies the section for
 the version being released into cache/release-notes-X.Y.Z.md for the optional GitHub release.
 
+## [Unreleased]
+
+- `notebooks/skyshift_colab.ipynb`: run the tests, the web app, the precache, the experiments and the
+  showcase build on Google Colab ("Open in Colab" link in the README).
+
 ## [0.2.0] - 2026-10-06
 
 Ready for public use: an online showcase, and a server that can run as a public website.

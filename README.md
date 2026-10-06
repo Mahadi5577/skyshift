@@ -30,6 +30,8 @@ Needs Python 3.11-3.13 (3.12 tested) and an internet connection.
 
 Then open **http://localhost:8000**.
 
+**No install? Run it on Google Colab:** [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Mahadi5577/skyshift/blob/main/notebooks/skyshift_colab.ipynb) ([notebooks/skyshift_colab.ipynb](notebooks/skyshift_colab.ipynb)): tests, the web app, the precache, the experiments and the showcase build, next to NASA's data.
+
 **Before any demo, run the precache.** On a connection far from the US servers, a fresh sky position takes 10-40 s to
 download; cached ones open instantly, and Hunt mode only uses cached patches.
 
@@ -61,6 +63,7 @@ backend/
   wave_tables/   SPHEREx WCS-WAVE lookup tables (one per detector)
 web/             single-page app (no build step): index.html, css/, js/
 scripts/         precache.py, export_static.py (online showcase), release_check.py
+notebooks/       skyshift_colab.ipynb (run everything on Google Colab)
 tests/           pytest suite (offline; SKYSHIFT_NETWORK=1 adds a live IRSA test)
 experiments/     standalone SPHEREx experiments behind the design + FINDINGS.md
 docs/            deployment, release checklist, outreach drafts, images
