@@ -96,6 +96,12 @@ def coverage(ra, dec, collection="spherex_qr2"):
     return cov
 
 
+def public_coverage(cov):
+    """Coverage as the web page gets it: no archive keys or detector-edge distances."""
+    return {k: v for k, v in cov.items() if k != "images"} | {
+        "images": [{k: im[k] for k in ("id", "det", "date", "mjd", "wave", "pass")} for im in cov["images"]]}
+
+
 def suggest_wave(images, zoom="months"):
     """Best wavelength for a zoom level; ties go to shorter wavelengths (sharper, more stars).
     hours: most frames in one 24-hour window. days: most frames in one survey pass.

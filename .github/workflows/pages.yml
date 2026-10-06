@@ -1,0 +1,54 @@
+name: Showcase (GitHub Pages)
+
+# Builds the online showcase with scripts/export_static.py (tour stops at every zoom + Hunt
+# practice patches, read from the NASA archive on GitHub's US servers) and publishes it at
+# https://mahadi5577.github.io/skyshift/. Downloads are cached between runs.
+on:
+  push:
+    branches: [main]
+    paths: ["backend/**", "web/**", "scripts/export_static.py", "requirements.txt", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - name: Install
+        run: pip install -r requirements.txt
+      - name: Reuse earlier downloads
+        uses: actions/cache@v6
+        with:
+          path: cache
+          key: showcase-${{ hashFiles('backend/spherex.py', 'backend/sequences.py', 'backend/tour.py', 'backend/precache.py') }}-${{ github.run_id }}
+          restore-keys: |
+            showcase-${{ hashFiles('backend/spherex.py', 'backend/sequences.py', 'backend/tour.py', 'backend/precache.py') }}-
+      - name: Build the showcase
+        run: python scripts/export_static.py --out site
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

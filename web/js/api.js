@@ -1,4 +1,6 @@
-// Thin wrappers around the SkyShift backend API.
+// Thin wrappers around the SkyShift backend API. In the online showcase (a static copy made by
+// scripts/export_static.py) the same calls are answered from files instead: see static.js.
+import { staticApi } from "./static.js";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -24,7 +26,8 @@ const floats = (path) => call(path).then((r) => r.arrayBuffer()).then((b) => new
 const post = (path, body) =>
   json(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
 
-export const api = {
+const serverApi = {
+  isStatic: false,
   resolve: (q) => json(`/api/resolve?q=${encodeURIComponent(q)}`),
   coverage: (ra, dec) => json(`/api/coverage?ra=${ra}&dec=${dec}`),
   sequence: (req) => post("/api/sequence", req),
@@ -37,6 +40,8 @@ export const api = {
   frame: (id, i) => floats(`/api/sequence/${id}/frame/${i}`),
   huntFrame: (roundId, i) => floats(`/api/hunt/round/${roundId}/frame/${i}`),
 };
+
+export const api = document.querySelector('meta[name="skyshift-static"]') ? staticApi : serverApi;
 
 // Poll a sequence until every frame is ready or failed; calls onFrame(i, data) as each arrives.
 export async function loadSequence(seq, onFrame, { signal, interval = 1200 } = {}) {

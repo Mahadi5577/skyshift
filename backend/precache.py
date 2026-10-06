@@ -1,6 +1,6 @@
 """Download everything a demo needs ahead of time: tour stops plus sky patches for Hunt mode.
-Used by scripts/precache.py and, with SKYSHIFT_PRECACHE=1, by the server at start-up.
-Everything downloaded here is pinned, so cache pruning never removes it.
+Used by scripts/precache.py, scripts/export_static.py and, with SKYSHIFT_PRECACHE=1, by the
+server at start-up. Everything downloaded here is pinned, so cache pruning never removes it.
 """
 import time
 
@@ -10,12 +10,18 @@ from astropy.coordinates import GeocentricTrueEcliptic, SkyCoord
 from . import known, sequences, tour
 
 
-def jobs(patches=6, include_tour=True):
+def jobs(patches=6, include_tour=True, tour_zooms=False):
+    """(label, kwargs for sequences.start). With tour_zooms, also every other zoom level at each
+    tour stop, requested exactly as the Explore page asks for them when you switch zoom there."""
     out = []
     if include_tour:
         for s in tour.stops():
             out.append((f"tour: {s['title']}", dict(ra=s["ra"], dec=s["dec"], zoom=s["zoom"], wave=s["wave"],
                                                      n=s["n"], t_min=s["t_min"], t_max=s["t_max"], tol=s["tol"])))
+            if tour_zooms:
+                for z in sequences.ZOOMS:
+                    if z != s["zoom"]:
+                        out.append((f"tour: {s['title']} ({z})", dict(ra=s["ra"], dec=s["dec"], zoom=z, wave=s["wave"])))
     # Hunt patches along the ecliptic, where asteroids are most common.
     for k in range(patches):
         c = SkyCoord(lon=(150 + 12 * k) * u.deg, lat=0 * u.deg, frame=GeocentricTrueEcliptic).icrs
@@ -25,8 +31,10 @@ def jobs(patches=6, include_tour=True):
     return out
 
 
-def run(patches=6, include_tour=True, log=print):
-    for label, kw in jobs(patches, include_tour):
+def run(patches=6, include_tour=True, log=print, tour_zooms=False):
+    """Download the jobs one by one. Returns [(label, kwargs, sequence)] for the ones that exist."""
+    done = []
+    for label, kw in jobs(patches, include_tour, tour_zooms):
         log(label)
         try:
             seq = sequences.start(**kw)
@@ -47,5 +55,7 @@ def run(patches=6, include_tour=True, log=print):
                 log(f"    known objects: {', '.join(o['name'] for o in k['objects'][:5])}")
         except Exception as e:
             log(f"    known objects unavailable: {e}")
+        done.append((label, kw, seq))
     n = len(sequences.cached_sequences(max_age=0))
     log(f"done; hunt pool now has {n} complete sequences")
+    return done

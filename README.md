@@ -3,6 +3,9 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23181747.svg)](https://doi.org/10.5281/zenodo.23181747)
 [![CI](https://github.com/Mahadi5577/skyshift/actions/workflows/ci.yml/badge.svg)](https://github.com/Mahadi5577/skyshift/actions/workflows/ci.yml)
 
+**Try it online: https://mahadi5577.github.io/skyshift/** (a showcase: the guided tour and Hunt
+practice rounds; run it on your computer to explore the whole sky).
+
 **Zoom through time in NASA SPHEREx sky images.** A map app lets you zoom through space;
 SkyShift lets you zoom through time: hours (asteroids crawl), days (distant worlds drift),
 months (whole survey passes) and a year (nearby stars shift). A "Hunt Planet X" game trains
@@ -31,9 +34,14 @@ Then open **http://localhost:8000**.
 download; cached ones open instantly, and Hunt mode only uses cached patches.
 
 ### Put it online
-The [`Dockerfile`](Dockerfile) runs SkyShift as a public website, with per-visitor rate limits,
+The online showcase is a static copy that GitHub Pages hosts for free:
+`scripts/export_static.py` exports the tour stops (every zoom) and the Hunt patches as files, and
+[`.github/workflows/pages.yml`](.github/workflows/pages.yml) rebuilds it on every push. Searching
+new positions and the shared candidate board need the full server.
+
+The [`Dockerfile`](Dockerfile) runs the full SkyShift as a public website, with per-visitor rate limits,
 a cap on parallel downloads, a cache size limit and a Hunt database that survives restarts.
-[docs/DEPLOY.md](docs/DEPLOY.md) covers a free Hugging Face Space (deployed from GitHub
+[docs/DEPLOY.md](docs/DEPLOY.md) covers a Hugging Face Space (needs a PRO subscription; deployed from GitHub
 Actions, so nothing large is uploaded from your computer), any Docker host, and every setting.
 
 ## What's inside
@@ -52,7 +60,7 @@ backend/
   tour.py        guided tour stops
   wave_tables/   SPHEREx WCS-WAVE lookup tables (one per detector)
 web/             single-page app (no build step): index.html, css/, js/
-scripts/         precache.py, release_check.py
+scripts/         precache.py, export_static.py (online showcase), release_check.py
 tests/           pytest suite (offline; SKYSHIFT_NETWORK=1 adds a live IRSA test)
 experiments/     standalone SPHEREx experiments behind the design + FINDINGS.md
 docs/            deployment, release checklist, outreach drafts, images

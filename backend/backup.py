@@ -1,5 +1,5 @@
 """Optional backup of the Hunt database to a private Hugging Face dataset repository, for hosts
-whose disk is wiped on every restart (such as a free Hugging Face Space).
+whose disk is wiped on every restart (such as a Hugging Face Space without persistent storage).
 
 Off unless SKYSHIFT_BACKUP_REPO (e.g. "your-name/skyshift-hunt") and HF_TOKEN are set. At start-up
 the last backup is restored if there is no local database; afterwards the server uploads a

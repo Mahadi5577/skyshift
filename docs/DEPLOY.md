@@ -30,13 +30,31 @@ ones marked *.
 Check a running server at `/api/health`: version, downloads in progress, cache size, Hunt pool
 size and precache state.
 
-## Option A: Hugging Face Space (free)
+## Online showcase on GitHub Pages (free, no server)
 
-A free "CPU basic" Space (2 vCPU, 16 GB RAM) is enough. It runs in the US, close to the data.
-You need no credit card, and **the upload runs on GitHub's servers**, so nothing large leaves your
-computer.
+This is what https://mahadi5577.github.io/skyshift/ runs. `scripts/export_static.py` downloads the
+tour stops (at every zoom level) and the Hunt patches, then writes the web app plus those frames
+as plain files to `site/`. The `<meta name="skyshift-static">` tag it adds makes the page answer
+its API calls from those files (`web/js/static.js`). Searching other positions and the shared
+candidate board are switched off, and Hunt offers practice rounds scored in the browser.
 
-1. Create a free account at https://huggingface.co.
+[`.github/workflows/pages.yml`](../.github/workflows/pages.yml) rebuilds and publishes it on every
+push that touches the app, and on demand (**Actions > Showcase (GitHub Pages) > Run workflow**).
+It runs on GitHub's servers and caches the downloads between runs. One-time setup: **Settings >
+Pages > Source: GitHub Actions**.
+
+To look at it locally: `python scripts/export_static.py`, then `python -m http.server -d site`
+and open http://localhost:8000.
+
+## Option A: Hugging Face Space (needs a PRO subscription)
+
+A "CPU basic" Space (2 vCPU, 16 GB RAM) is enough. It runs in the US, close to the data, and
+**the upload runs on GitHub's servers**, so nothing large leaves your computer. Docker Spaces are
+**not free**: on 2026-10-06 creating one answered "Static Spaces are free for everyone, but
+hosting Gradio and Docker Spaces on free cpu-basic requires a PRO subscription". Subscribe at
+https://huggingface.co/pro first.
+
+1. Create an account at https://huggingface.co and subscribe to PRO.
 2. Create a token at https://huggingface.co/settings/tokens with **write** access.
 3. In the GitHub repository, open **Settings > Secrets and variables > Actions**:
    - **Secrets** tab: add `HF_TOKEN` = the token.
@@ -51,7 +69,7 @@ computer.
 6. Run the workflow again whenever you want the Space to pick up new code from `main`.
 
 ### Keep Hunt data across restarts
-A free Space's disk is wiped every time it restarts or rebuilds. A Space also sleeps after a
+A Space's disk is wiped every time it restarts or rebuilds. A Space also sleeps after a
 couple of days without visitors, and waking it is a restart. The download cache simply comes
 back, but players and the candidate board would be lost. Choose one:
 

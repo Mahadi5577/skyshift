@@ -29,6 +29,12 @@ Getting ready for a public server (planned as 0.2.0).
   the board no longer depends on cached sequences. Optional backup to a private Hugging Face
   dataset for hosts that wipe their disk.
 
+### Online showcase
+- **https://mahadi5577.github.io/skyshift/**: a static copy on GitHub Pages (free, no server) with
+  the tour stops at every zoom and Hunt practice rounds. Built by `scripts/export_static.py` and
+  published by `.github/workflows/pages.yml`. (Hugging Face Docker Spaces turned out to need a paid
+  PRO subscription.)
+
 ### Explore
 - The sky map shows the **SPHEREx QR2 all-sky colour map** (CDS HiPS) by default, with 2MASS as
   an option.

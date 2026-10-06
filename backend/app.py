@@ -116,9 +116,7 @@ def resolve(q: str = Query(..., min_length=1, max_length=100)):
 @app.get("/api/coverage", dependencies=[heavy])
 def coverage(ra: float = Query(..., ge=0, lt=360), dec: float = Query(..., ge=-90, le=90)):
     """Every SPHEREx image of a position, with the wavelength it saw there and its survey pass."""
-    cov = sequences.coverage(ra, dec)
-    return {k: v for k, v in cov.items() if k != "images"} | {
-        "images": [{k: im[k] for k in ("id", "det", "date", "mjd", "wave", "pass")} for im in cov["images"]]}
+    return sequences.public_coverage(sequences.coverage(ra, dec))
 
 
 class SequenceRequest(BaseModel):

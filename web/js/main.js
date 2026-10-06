@@ -21,7 +21,8 @@ async function loadBoard() {
     return;
   }
   if (!data.candidates.length) {
-    body.innerHTML = '<tr><td colspan="6" class="muted">No flags yet. Play real rounds in Hunt to add some.</td></tr>';
+    body.innerHTML = '<tr><td colspan="6" class="muted"></td></tr>';
+    body.querySelector("td").textContent = data.note || "No flags yet. Play real rounds in Hunt to add some.";
     return;
   }
   body.innerHTML = "";
@@ -38,6 +39,10 @@ async function loadBoard() {
   });
 }
 
+if (api.isStatic) {
+  document.body.classList.add("static");
+  $("#showcase-note").classList.remove("hidden");
+}
 document.querySelectorAll(".tabs [data-tab]").forEach((b) => (b.onclick = () => showTab(b.dataset.tab)));
 $("#board-refresh").onclick = loadBoard;
 
