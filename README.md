@@ -138,7 +138,7 @@ SKYSHIFT_NETWORK=1 pytest      # also hits the IRSA archive
 Please cite the software using [CITATION.cff](CITATION.cff) (GitHub's "Cite this repository"
 button), or the Zenodo archive:
 
-> Amin, MD. Nurol (2026). *SkyShift: zoom through time in NASA SPHEREx sky images* (Version 0.1.0) [Software]. Zenodo. https://doi.org/10.5281/zenodo.23181748
+> Amin, MD. Nurol (2026). *SkyShift: zoom through time in NASA SPHEREx sky images* (Version 0.2.0) [Software]. Zenodo. https://doi.org/10.5281/zenodo.23193726
 
 Use the version DOI above for a specific release, or the concept DOI
 [10.5281/zenodo.23181747](https://doi.org/10.5281/zenodo.23181747) for "the latest version". How releases are archived: [docs/ZENODO.md](docs/ZENODO.md). Papers using SPHEREx data must also include the

@@ -5,9 +5,11 @@ SkyShift is archived on Zenodo by **manual upload**:
 | | DOI | Use it for |
 |---|---|---|
 | Concept (all versions) | [10.5281/zenodo.23181747](https://doi.org/10.5281/zenodo.23181747) | README badge, `CITATION.cff`, "cite the software" |
+| Version 0.2.0 | [10.5281/zenodo.23193726](https://doi.org/10.5281/zenodo.23193726) | Papers that used exactly v0.2.0 |
 | Version 0.1.0 | [10.5281/zenodo.23181748](https://doi.org/10.5281/zenodo.23181748) | Papers that used exactly v0.1.0 |
 
-Record: https://zenodo.org/records/23181748. Git tag `v0.1.0` marks the archived commit.
+Latest record: https://zenodo.org/records/23193726. Git tags (`v0.1.0`, `v0.2.0`) mark the archived
+commits.
 
 ## Rule: keep Zenodo's GitHub switch OFF
 The record was made by hand, so Zenodo's GitHub integration must stay **off**
@@ -27,10 +29,12 @@ Zenodo's webhook is installed.
    git tag -a v0.2.0 -m "SkyShift 0.2.0" && git push origin v0.2.0
    git archive --format=zip --prefix=skyshift-0.2.0/ -o skyshift-0.2.0.zip v0.2.0
    ```
-4. On https://zenodo.org/records/23181748 press **New version**. Delete the old zip, upload
+4. Open the concept DOI https://doi.org/10.5281/zenodo.23181747 (it lands on the latest version)
+   and press **New version**. Delete the old zip, upload
    `skyshift-0.2.0.zip`, set **Version** to `0.2.0` and **Publication date** to today, and
    update anything else that changed. Then press **Publish**.
-5. Add the new version DOI to `CITATION.cff` (`identifiers`) and `CHANGELOG.md`, then commit.
+5. Add the new version DOI to `CITATION.cff` (`identifiers`), `CHANGELOG.md`, the README's
+   citation line and the table above, then commit.
 6. Optional: `gh release create v0.2.0 --notes-file cache/release-notes-0.2.0.md`. This is
    safe **only** while the Zenodo switch is off.
 

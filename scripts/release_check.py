@@ -146,7 +146,7 @@ def main():
     print(f"\nReady. Next (details in docs/ZENODO.md):\n"
           f"  git tag -a v{v} -m \"SkyShift {v}\" && git push origin v{v}\n"
           f"  git archive --format=zip --prefix=skyshift-{v}/ -o skyshift-{v}.zip v{v}\n"
-          f"  Zenodo: https://zenodo.org/records/23181748 -> New version -> upload skyshift-{v}.zip -> Publish\n"
+          f"  Zenodo: https://doi.org/10.5281/zenodo.23181747 (latest version) -> New version -> upload skyshift-{v}.zip -> Publish\n"
           f"  optional GitHub release: gh release create v{v} --title \"SkyShift {v}\" "
           f"--notes-file {notes_path.relative_to(ROOT).as_posix()}")
     return 0

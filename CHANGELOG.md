@@ -6,6 +6,7 @@ the version being released into cache/release-notes-X.Y.Z.md for the optional Gi
 ## [0.2.0] - 2026-10-06
 
 Ready for public use: an online showcase, and a server that can run as a public website.
+Zenodo: https://doi.org/10.5281/zenodo.23193726 (concept DOI 10.5281/zenodo.23181747).
 
 ### Public server
 - **Docker image** (`Dockerfile`) and `docs/DEPLOY.md`: Hugging Face Space (deployed by a manual
