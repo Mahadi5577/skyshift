@@ -1,11 +1,11 @@
 # Changelog
 
 Format: one section per release, newest first. `scripts/release_check.py` copies the section for
-the version being released into the GitHub release notes, which Zenodo archives.
+the version being released into cache/release-notes-X.Y.Z.md for the optional GitHub release.
 
-## [0.1.0]
+## [0.1.0] - 2026-10-06
 
-First public release.
+First public release. Zenodo: https://doi.org/10.5281/zenodo.23181748 (concept DOI 10.5281/zenodo.23181747).
 
 ### Web app
 - **Explore:** search by name or RA/Dec, a guided tour (asteroid Hygiea, Pluto, the ecliptic,

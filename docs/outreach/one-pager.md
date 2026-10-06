@@ -1,6 +1,6 @@
 # SkyShift: zoom through time in NASA SPHEREx sky images
 
-**Author:** MD. Nurol Amin, Daffodil International University (ORCID [0009-0005-8289-7804](https://orcid.org/0009-0005-8289-7804)) · **Contact:** amin15-5577@diu.edu.bd · **Code:** https://github.com/Mahadi5577/skyshift (DOI: _pending_) · **Demo video:** _TODO link_
+**Author:** MD. Nurol Amin, Daffodil International University (ORCID [0009-0005-8289-7804](https://orcid.org/0009-0005-8289-7804)) · **Contact:** amin15-5577@diu.edu.bd · **Code:** https://github.com/Mahadi5577/skyshift (DOI: [10.5281/zenodo.23181747](https://doi.org/10.5281/zenodo.23181747)) · **Demo video:** _TODO link_
 
 ## The opportunity
 Since May 2025, NASA's SPHEREx has imaged the whole sky every six months in 102 near-infrared

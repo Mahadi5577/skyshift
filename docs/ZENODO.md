@@ -1,73 +1,52 @@
-# Connecting SkyShift to Zenodo (step by step)
+# Zenodo archiving
 
-Zenodo archives each GitHub **release** and gives it a DOI, a permanent identifier that papers can
-cite. The repository is already prepared; this page covers the steps that need your own accounts.
+SkyShift is archived on Zenodo by **manual upload**:
 
-**Before you start, know three things:**
-1. **Zenodo only sees public repositories** and only archives releases published *after* you
-   switch the repository on. Order matters: public, then switch on, then release.
-2. **Metadata comes from `.zenodo.json`,** which `scripts/release_check.py --write` generates from
-   `CITATION.cff`. Edit `CITATION.cff`, never `.zenodo.json` by hand.
-3. **A DOI is permanent.** You can fix metadata later and publish new versions, but a published
-   record cannot be deleted. Get the author list right first.
+| | DOI | Use it for |
+|---|---|---|
+| Concept (all versions) | [10.5281/zenodo.23181747](https://doi.org/10.5281/zenodo.23181747) | README badge, `CITATION.cff`, "cite the software" |
+| Version 0.1.0 | [10.5281/zenodo.23181748](https://doi.org/10.5281/zenodo.23181748) | Papers that used exactly v0.1.0 |
 
-## Step 0: one-time accounts (about 10 minutes)
-- [ ] **ORCID** for each author: https://orcid.org/register. Put the IDs in `CITATION.cff` as
-      `orcid: "https://orcid.org/0000-0000-0000-0000"`.
-- [ ] **Zenodo**: go to https://zenodo.org and choose *Log in*, then *Log in with GitHub*
-      (account Mahadi5577). In Zenodo's profile settings, also link ORCID.
-- [ ] Optional rehearsal: https://sandbox.zenodo.org is a full copy of Zenodo whose DOIs are fake.
-      Running steps 3-4 there first is a safe way to see what the record will look like.
+Record: https://zenodo.org/records/23181748. Git tag `v0.1.0` marks the archived commit.
 
-## Step 1: finish the metadata
-- [ ] The team signs `AUTHORS.md`.
-- [ ] In `CITATION.cff`, replace every `TODO` with real names, affiliations and ORCIDs, and set
-      `version: 0.1.0` and `date-released:` to the release day.
-- [ ] Generate Zenodo's metadata, then commit and push:
-      ```
-      pip install -r requirements-dev.txt
-      python scripts/release_check.py 0.1.0 --write
-      git add .zenodo.json CITATION.cff AUTHORS.md
-      git commit -m "Release metadata for 0.1.0"
-      git push
-      ```
+## Rule: keep Zenodo's GitHub switch OFF
+The record was made by hand, so Zenodo's GitHub integration must stay **off**
+(https://zenodo.org/account/settings/github/, set skyshift to Off). If it is on, every GitHub
+*release* creates a **second, unrelated record with a different DOI**. Pushing tags is always
+safe; only GitHub releases trigger Zenodo. `scripts/release_check.py` blocks a release while
+Zenodo's webhook is installed.
 
-## Step 2: make the repository public
-```
-gh repo edit Mahadi5577/skyshift --visibility public --accept-visibility-change-consequences
-```
-(or on GitHub: Settings, then General, then Danger Zone, then Change visibility)
+## Publishing a new version (e.g. 0.2.0)
+1. Update `version` and `date-released` in `CITATION.cff`, and add `## [0.2.0] - YYYY-MM-DD`
+   to `CHANGELOG.md`.
+2. `python scripts/release_check.py 0.2.0 --write`. Fix every BLOCK, commit and push, then
+   run it again until it says **Ready**.
+3. Tag and make the archive:
+   ```
+   git tag -a v0.2.0 -m "SkyShift 0.2.0" && git push origin v0.2.0
+   git archive --format=zip --prefix=skyshift-0.2.0/ -o skyshift-0.2.0.zip v0.2.0
+   ```
+4. On https://zenodo.org/records/23181748 press **New version**. Delete the old zip, upload
+   `skyshift-0.2.0.zip`, set **Version** to `0.2.0` and **Publication date** to today, and
+   update anything else that changed. Then press **Publish**.
+5. Add the new version DOI to `CITATION.cff` (`identifiers`) and `CHANGELOG.md`, then commit.
+6. Optional: `gh release create v0.2.0 --notes-file cache/release-notes-0.2.0.md`. This is
+   safe **only** while the Zenodo switch is off.
 
-## Step 3: switch the repository on in Zenodo
-1. Open https://zenodo.org/account/settings/github/
-2. Click **Sync now** if `skyshift` isn't listed.
-3. Flip the switch next to **Mahadi5577/skyshift** to **On**.
+## Fixing metadata (no new DOI needed)
+On the record page, press **Edit**, change the fields, then press **Publish**. Files stay
+locked; titles, creators, descriptions, keywords and related works can all change, and the
+DOI stays the same.
 
-## Step 4: check, then release
-```
-python scripts/release_check.py 0.1.0
-```
-It must end with **Ready**. Then run the command it prints:
-```
-gh release create v0.1.0 --title "SkyShift 0.1.0" --notes-file cache/release-notes-0.1.0.md
-```
-Within a few minutes the repository appears at https://zenodo.org/account/settings/github/
-with a DOI. If it shows an error instead, open the repository there to read the message. Usually
-it is a metadata problem: fix it, then publish a new release such as `v0.1.1`.
+**To do on the 0.1.0 record:**
+- [ ] **Creator name is reversed** (shows "MD. Nurol, Amin"). Set family name `Amin`, given
+      names `MD. Nurol`.
+- [ ] Add ORCID `0009-0005-8289-7804` and affiliation `Daffodil International University`
+      to the creator.
+- [ ] Optional: add keywords `Solar System`, `moving objects`, `citizen science`,
+      `data visualization`.
 
-## Step 5: after the DOI exists
-Zenodo gives two DOIs:
-- the **concept DOI**, which always points to the newest version (use it in the README badge and
-  in `CITATION.cff`), and
-- a **version DOI** for exactly this release (use it in a paper's methods section).
-
-- [ ] Add the concept DOI to `CITATION.cff` as `doi: 10.5281/zenodo.NNNNNNN`.
-- [ ] Add the badge Zenodo shows (the record page has a "DOI badge" button) to the top of
-      `README.md`.
-- [ ] Commit and push. A new release is not needed for this.
-- [ ] Optional: add the record to a Zenodo community (record page, then "Communities").
-
-## Later versions
-Update `version` and `date-released` in `CITATION.cff`, add a section to `CHANGELOG.md`, run
-`release_check.py X.Y.Z --write`, commit, push, then `gh release create vX.Y.Z ...`.
-Zenodo adds a new version under the same concept DOI.
+## Metadata source
+`CITATION.cff` is the source of truth. `.zenodo.json` mirrors it (regenerated by
+`release_check.py --write`) as a ready reference when filling in the form. Switching to the
+GitHub route later would start a *new* concept DOI, so stay with manual versions.

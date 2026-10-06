@@ -1,5 +1,8 @@
 # SkyShift
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23181747.svg)](https://doi.org/10.5281/zenodo.23181747)
+[![CI](https://github.com/Mahadi5577/skyshift/actions/workflows/ci.yml/badge.svg)](https://github.com/Mahadi5577/skyshift/actions/workflows/ci.yml)
+
 **Zoom through time in NASA SPHEREx sky images.** A map app lets you zoom through space;
 SkyShift lets you zoom through time: hours (asteroids crawl), days (distant worlds drift),
 months (whole survey passes) and a year (nearby stars shift). A "Hunt Planet X" game trains
@@ -107,8 +110,12 @@ SKYSHIFT_NETWORK=1 pytest      # also hits the IRSA archive
 
 ## Citing SkyShift
 Please cite the software using [CITATION.cff](CITATION.cff) (GitHub's "Cite this repository"
-button). A Zenodo DOI will be added with the first public release (step by step:
-[docs/ZENODO.md](docs/ZENODO.md)). Papers using SPHEREx data must also include the
+button), or the Zenodo archive:
+
+> Amin, MD. Nurol (2026). *SkyShift: zoom through time in NASA SPHEREx sky images* (Version 0.1.0) [Software]. Zenodo. https://doi.org/10.5281/zenodo.23181748
+
+Use the version DOI above for a specific release, or the concept DOI
+[10.5281/zenodo.23181747](https://doi.org/10.5281/zenodo.23181747) for "the latest version". How releases are archived: [docs/ZENODO.md](docs/ZENODO.md). Papers using SPHEREx data must also include the
 mission acknowledgement and dataset DOI in [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md).
 
 ## Authors, AI use and licence

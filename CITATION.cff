@@ -1,13 +1,21 @@
 # Citation metadata. GitHub shows a "Cite this repository" button from it, and Zenodo reads it
-# when minting a DOI (via .zenodo.json, generated from this file by scripts/release_check.py).
+# Zenodo records are created by manual upload (see docs/ZENODO.md); .zenodo.json mirrors this file.
 cff-version: 1.2.0
 message: "If you use SkyShift, please cite it using the metadata below."
 type: software
 title: "SkyShift: zoom through time in NASA SPHEREx sky images"
 version: 0.1.0
+doi: 10.5281/zenodo.23181747
 date-released: 2026-10-06
 license: BSD-3-Clause
 repository-code: "https://github.com/Mahadi5577/skyshift"
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.23181747
+    description: "Concept DOI: always resolves to the latest version"
+  - type: doi
+    value: 10.5281/zenodo.23181748
+    description: "Version 0.1.0"
 abstract: >-
   SkyShift is an open-source web tool and analysis toolkit for exploring how the sky changes in
   NASA SPHEREx near-infrared survey images. It selects wavelength-matched SPHEREx exposures of any

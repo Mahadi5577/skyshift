@@ -1,11 +1,11 @@
-"""Pre-release gate for a Zenodo-archived GitHub release.
+"""Pre-release gate for a SkyShift release archived on Zenodo (manual upload, see docs/ZENODO.md).
 
     python scripts/release_check.py 0.1.0            # check only
     python scripts/release_check.py 0.1.0 --write    # also regenerate .zenodo.json from CITATION.cff
 
-Blocking problems make it exit with code 1. Zenodo reads .zenodo.json (if present) instead of
-CITATION.cff, so .zenodo.json is generated from CITATION.cff here and the two never drift apart.
-It adds what CITATION.cff cannot express: the SPHEREx dataset DOI as a related identifier.
+Blocking problems make it exit with code 1. .zenodo.json is generated from CITATION.cff (plus the
+SPHEREx dataset DOI as a related identifier) so the two never drift apart; it is the reference
+for the fields to enter when publishing a new version on Zenodo.
 """
 import argparse
 import datetime as dt
@@ -103,14 +103,15 @@ def main():
     vis = run(["gh", "repo", "view", "--json", "visibility", "--jq", ".visibility"]).stdout.strip()
     if vis != "PUBLIC":
         blockers.append(f"repository is {vis or 'unknown'}: make it public before enabling it in Zenodo")
-    # Switching the repo on in Zenodo installs a webhook; a release made before that gets no DOI.
+    # SkyShift is versioned by manual upload under one concept DOI (docs/ZENODO.md). If Zenodo's
+    # GitHub integration is on, a GitHub release would create a second, unrelated record.
     hooks = run(["gh", "api", "repos/{owner}/{repo}/hooks", "--jq", ".[].config.url"])
     if hooks.returncode != 0:
-        warnings.append("could not list webhooks: confirm the repo is switched ON at "
+        warnings.append("could not list webhooks: confirm Zenodo's GitHub switch is OFF at "
                         "https://zenodo.org/account/settings/github/")
-    elif "zenodo" not in hooks.stdout:
-        blockers.append("Zenodo is not switched on for this repo yet: "
-                        "https://zenodo.org/account/settings/github/ (Sync now, then flip the switch)")
+    elif "zenodo" in hooks.stdout:
+        blockers.append("Zenodo's GitHub integration is ON: turn it off at "
+                        "https://zenodo.org/account/settings/github/ (a GitHub release would make a duplicate DOI)")
 
     # 4. Release notes exist
     changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
@@ -137,7 +138,12 @@ def main():
     notes = re.search(rf"^## \[?v?{re.escape(args.version)}\]?.*?\n(.*?)(?=^## |\Z)", changelog, re.M | re.S)
     notes_path.parent.mkdir(exist_ok=True)
     notes_path.write_text(notes.group(1).strip() + "\n", encoding="utf-8")
-    print(f"\nReady. Release with:\n  gh release create v{args.version} --title \"SkyShift {args.version}\" "
+    v = args.version
+    print(f"\nReady. Next (details in docs/ZENODO.md):\n"
+          f"  git tag -a v{v} -m \"SkyShift {v}\" && git push origin v{v}\n"
+          f"  git archive --format=zip --prefix=skyshift-{v}/ -o skyshift-{v}.zip v{v}\n"
+          f"  Zenodo: https://zenodo.org/records/23181748 -> New version -> upload skyshift-{v}.zip -> Publish\n"
+          f"  optional GitHub release: gh release create v{v} --title \"SkyShift {v}\" "
           f"--notes-file {notes_path.relative_to(ROOT).as_posix()}")
     return 0
 

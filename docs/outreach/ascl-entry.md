@@ -18,6 +18,6 @@ peer review (an ASCL requirement). Fill in the TODOs first.
   skill-weighted candidate flags from real data. The package includes the experiment scripts used
   to measure data-access performance, time-sampling coverage and injection-recovery detection
   limits.
-- **Site list:** https://github.com/Mahadi5577/skyshift ; Zenodo DOI _TODO_
+- **Site list:** https://github.com/Mahadi5577/skyshift ; https://doi.org/10.5281/zenodo.23181747
 - **Keywords:** SPHEREx; time-domain; solar system; asteroids; visualization; citizen science
 - **Paper(s) using the code:** _TODO: the submitted paper's citation or arXiv ID_
