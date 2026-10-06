@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - name: Install
+        run: pip install -r requirements-dev.txt
+      - name: Tests (offline)
+        run: pytest
+      - name: Citation metadata is valid
+        run: cffconvert --validate
+      - name: JavaScript parses
+        run: |
+          mkdir -p /tmp/js
+          for f in web/js/*.js; do cp "$f" "/tmp/js/$(basename "$f" .js).mjs"; done
+          for f in /tmp/js/*.mjs; do node --check "$f"; done

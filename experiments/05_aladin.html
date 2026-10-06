@@ -1,0 +1,58 @@
+<!doctype html>
+<!-- Experiment 5: Aladin Lite v3 basics (sky navigation, survey switch, markers, local FITS overlay).
+     Open directly in a browser. Learning only. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aladin Lite test</title>
+<style>
+  body { margin: 0; font: 14px system-ui, sans-serif; background: #111; color: #eee; }
+  header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 16px; }
+  #sky { width: 100%; height: calc(100vh - 56px); }
+  input, select, button { font: inherit; }
+</style>
+</head>
+<body>
+<header>
+  <input id="target" value="M51" size="16" aria-label="target name or coordinates">
+  <button id="go">Go</button>
+  <select id="survey" aria-label="background survey">
+    <option value="P/2MASS/color">2MASS (near-IR, closest to SPHEREx)</option>
+    <option value="P/allWISE/color">AllWISE (mid-IR)</option>
+    <option value="P/DSS2/color">DSS2 (optical)</option>
+  </select>
+  <label>Overlay a stamp FITS from data/: <input type="file" id="fits" accept=".fits"></label>
+  <span id="status"></span>
+</header>
+<div id="sky"></div>
+<script src="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js" charset="utf-8"></script>
+<script>
+A.init.then(() => {
+  const aladin = A.aladin('#sky', { survey: 'P/2MASS/color', fov: 0.25, target: 'M51',
+                                    showReticle: true, showCooGrid: false });
+  const status = document.getElementById('status');
+
+  // Markers: what a "known object here" overlay could feel like.
+  const cat = A.catalog({ name: 'notes', sourceSize: 16, color: 'orange' });
+  aladin.addCatalog(cat);
+  cat.addSources([A.marker(202.4696, 47.1952, { popupTitle: 'M51 nucleus',
+    popupDesc: 'Bright core left a residual in the SPHEREx difference image (see README).' })]);
+
+  document.getElementById('go').onclick = () => aladin.gotoObject(document.getElementById('target').value);
+  document.getElementById('survey').onchange = e => aladin.setImageSurvey(e.target.value);
+
+  // Test: can a SPHEREx stamp (with WCS) be laid over the sky straight from a local file?
+  document.getElementById('fits').onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      aladin.displayFITS(URL.createObjectURL(file), { name: file.name }, () => status.textContent = 'overlay loaded');
+    } catch (err) {
+      status.textContent = 'overlay failed: ' + err.message;
+    }
+  };
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+astropy==8.0.1
+astroquery==0.4.11
+fastapi==0.142.2
+fsspec==2026.9.0
+numpy==2.5.3
+reproject==0.21.0
+requests==2.34.2
+s3fs==2026.9.0
+scipy==1.18.1
+uvicorn==0.54.0

@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SkyShift</title>
+<meta name="description" content="Zoom through time in NASA SPHEREx sky images: watch asteroids move, hunt for Planet X.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%230b1020'/><circle cx='11' cy='18' r='3' fill='%2348a6ff' opacity='.5'/><circle cx='21' cy='13' r='3.5' fill='%23ffb547'/></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="logo" aria-hidden="true"><i></i><i></i></span>
+    <div>
+      <h1>SkyShift</h1>
+      <p class="tagline">Zoom through time in NASA SPHEREx sky images</p>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="explore" aria-selected="true">Explore</button>
+    <button role="tab" data-tab="hunt" aria-selected="false">Hunt Planet X</button>
+    <button role="tab" data-tab="board" aria-selected="false">Candidates</button>
+    <button role="tab" data-tab="about" aria-selected="false">About</button>
+  </nav>
+</header>
+
+<main>
+  <!-- EXPLORE -->
+  <section id="tab-explore" class="tab" role="tabpanel">
+    <div class="explore-grid">
+      <aside class="side">
+        <form id="search" class="search" autocomplete="off">
+          <label for="q" class="sr-only">Object name or RA,Dec</label>
+          <input id="q" placeholder="Search: M51, Orion Nebula, or 180,0" required>
+          <button type="submit" class="btn primary">Go</button>
+        </form>
+
+        <div class="card">
+          <h2>Guided tour</h2>
+          <ol id="tour" class="tour"></ol>
+        </div>
+
+        <div class="card map-card">
+          <div class="map-head">
+            <h2>Sky map</h2>
+            <button id="use-center" class="btn small">Look here</button>
+          </div>
+          <div id="aladin" class="aladin"></div>
+          <p class="hint">Drag to pan, scroll to zoom, then press <b>Look here</b>. Background: 2MASS near-infrared.</p>
+        </div>
+      </aside>
+
+      <div class="stage">
+        <div class="card viewer-card">
+          <div class="target-line">
+            <div>
+              <h2 id="target-name">Pick a place in the sky</h2>
+              <p id="target-sub" class="muted">Start the tour, search for an object, or use the map.</p>
+            </div>
+            <div id="cov-pill" class="pill hidden"></div>
+          </div>
+
+          <div class="zoom" role="radiogroup" aria-label="Time zoom">
+            <button role="radio" data-zoom="hours"><b>Hours</b><span>asteroids crawl</span></button>
+            <button role="radio" data-zoom="days" aria-checked="true"><b>Days</b><span>distant worlds drift</span></button>
+            <button role="radio" data-zoom="months"><b>Months</b><span>survey passes</span></button>
+            <button role="radio" data-zoom="year"><b>Year</b><span>nearby stars shift</span></button>
+          </div>
+
+          <div class="viewer-wrap">
+            <div id="viewer" class="viewer"></div>
+            <div id="viewer-msg" class="viewer-msg">Choose a target to load SPHEREx images.</div>
+          </div>
+
+          <div class="timeline" id="timeline" aria-label="Frames over time"></div>
+          <p id="caption" class="caption"></p>
+
+          <div class="controls">
+            <div class="seg" role="radiogroup" aria-label="View mode">
+              <button role="radio" data-mode="blink" aria-checked="true">Blink</button>
+              <button role="radio" data-mode="slider">Slider</button>
+              <button role="radio" data-mode="diff">Difference</button>
+            </div>
+            <div class="transport">
+              <button id="prev" class="btn icon" aria-label="Previous frame">&#9664;&#9664;</button>
+              <button id="play" class="btn icon" aria-label="Play or pause">&#10074;&#10074;</button>
+              <button id="next" class="btn icon" aria-label="Next frame">&#9654;&#9654;</button>
+            </div>
+            <label class="ctl">Speed <input id="speed" type="range" min="0.5" max="8" step="0.5" value="2"></label>
+            <label class="ctl">Contrast <input id="contrast" type="range" min="5" max="200" step="1" value="40"></label>
+            <label class="chk"><input id="balance" type="checkbox"> Balance brightness</label>
+            <label class="chk"><input id="known" type="checkbox" checked> Known objects</label>
+            <label class="ctl">Colour
+              <select id="wave" aria-label="Wavelength"></select>
+            </label>
+          </div>
+        </div>
+
+        <div class="card explain">
+          <h2 id="explain-title">How to read this</h2>
+          <div id="explain-body"></div>
+          <ul id="known-list" class="known-list"></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HUNT -->
+  <section id="tab-hunt" class="tab hidden" role="tabpanel">
+    <div class="hunt-grid">
+      <div class="card viewer-card">
+        <div class="target-line">
+          <div>
+            <h2>Hunt Planet X</h2>
+            <p class="muted" id="hunt-sub">Find the thing that moves. Practice rounds contain a planted fake; real rounds are untouched SPHEREx data.</p>
+          </div>
+          <span id="hunt-badge" class="badge hidden"></span>
+        </div>
+        <div class="viewer-wrap">
+          <div id="hunt-viewer" class="viewer"></div>
+          <div id="hunt-msg" class="viewer-msg">Enter a name and press Start.</div>
+        </div>
+        <div class="hunt-actions">
+          <button id="hunt-none" class="btn" disabled>Nothing moves here</button>
+          <button id="hunt-next" class="btn primary" disabled>Next round</button>
+        </div>
+        <p id="hunt-feedback" class="feedback" aria-live="polite"></p>
+      </div>
+      <aside class="side">
+        <div class="card">
+          <h2>Player</h2>
+          <form id="hunt-start" class="search">
+            <label for="player" class="sr-only">Player name</label>
+            <input id="player" placeholder="Your name" maxlength="40" required>
+            <button class="btn primary" type="submit">Start</button>
+          </form>
+          <dl class="stats">
+            <div><dt>Skill</dt><dd id="st-skill">-</dd></div>
+            <div><dt>Streak</dt><dd id="st-streak">-</dd></div>
+            <div><dt>Level</dt><dd id="st-level">-</dd></div>
+          </dl>
+        </div>
+        <div class="card">
+          <h2>How it works</h2>
+          <ol class="steps">
+            <li>Each round blinks a patch of sky imaged by SPHEREx over hours or days.</li>
+            <li>Stars stay still. <b>Click anything that moves.</b></li>
+            <li><b>Practice</b> rounds hide a planted fake mover so you can train. Fakes get fainter as you improve.</li>
+            <li><b>Real</b> rounds are untouched data. Your clicks go to the Candidates board, weighted by your practice skill.</li>
+          </ol>
+          <p class="hint">A real Planet X is probably too faint for SPHEREx. What you will really catch: asteroids, comets and distant icy bodies. The method is the same one astronomers use.</p>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- BOARD -->
+  <section id="tab-board" class="tab hidden" role="tabpanel">
+    <div class="card">
+      <div class="target-line">
+        <div>
+          <h2>Candidates from real rounds</h2>
+          <p class="muted">Moving things players flagged in untouched data, ranked by skill-weighted votes. Matches to known asteroids sink to the bottom.</p>
+        </div>
+        <button id="board-refresh" class="btn small">Refresh</button>
+      </div>
+      <div class="table-wrap">
+        <table class="board">
+          <thead><tr><th>#</th><th>Position (RA, Dec)</th><th>Votes</th><th>Score</th><th>Known object?</th><th></th></tr></thead>
+          <tbody id="board-body"><tr><td colspan="6" class="muted">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="tab-about" class="tab hidden" role="tabpanel">
+    <div class="card prose">
+      <h2>About SkyShift</h2>
+      <p>NASA's <b>SPHEREx</b> telescope photographs the entire sky every six months in 102 colours of near-infrared light. Things that move between pictures (asteroids, comets, nearby stars, perhaps even an unknown planet) give themselves away by shifting position.</p>
+      <p>A map app lets you zoom through <i>space</i>. SkyShift lets you zoom through <i>time</i>:</p>
+      <table class="about-table">
+        <thead><tr><th>Time zoom</th><th>What moves</th><th>Typical motion</th></tr></thead>
+        <tbody>
+          <tr><td>Hours</td><td>Main-belt asteroids</td><td>~6 pixels per hour</td></tr>
+          <tr><td>Days</td><td>Distant icy bodies, a "Planet X"</td><td>1-12 pixels per day</td></tr>
+          <tr><td>Months</td><td>Compare whole survey passes</td><td>-</td></tr>
+          <tr><td>Year</td><td>Fast nearby stars</td><td>~2 pixels per year</td></tr>
+        </tbody>
+      </table>
+      <p><b>The slower it moves, the farther away it is.</b></p>
+      <h3>Honest notes</h3>
+      <ul>
+        <li>SPHEREx sees each spot through a filter whose colour changes across the detector. SkyShift only blinks images taken at matching colours, except in Hours mode, where frames are brightness-balanced because motion is what matters.</li>
+        <li>Very bright objects can leave red and blue patterns in Difference mode even when nothing changed. These are false changes from slightly different image sharpness.</li>
+        <li>Practice fakes in Hunt mode are clearly labelled and never reach the Candidates board.</li>
+      </ul>
+      <h3>Data</h3>
+      <p>Images: NASA SPHEREx Quick Release 2 (<a href="https://doi.org/10.26131/IRSA652">doi:10.26131/IRSA652</a>) via the NASA/IPAC Infrared Science Archive (IRSA) and the public AWS bucket <code>nasa-irsa-spherex</code>. Known objects: IMCCE SkyBoT. Sky map: Aladin Lite (CDS) with 2MASS.</p>
+      <p class="muted">This publication makes use of data products from the Spectro-Photometer for the History of the Universe, Epoch of Reionization and Ices Explorer (SPHEREx), which is a joint project of the Jet Propulsion Laboratory and the California Institute of Technology, and is funded by the National Aeronautics and Space Administration. This research has made use of the NASA/IPAC Infrared Science Archive, which is funded by the National Aeronautics and Space Administration and operated by the California Institute of Technology.</p>
+      <p class="muted">SkyShift is an independent open-source project (BSD 3-Clause), started in response to the NASA Space Apps 2026 challenge "Planet X and SPHEREx". It is not affiliated with or endorsed by NASA.</p>
+    </div>
+  </section>
+</main>
+
+<script src="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js" charset="utf-8" defer></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{
+  "title": "SkyShift: zoom through time in NASA SPHEREx sky images",
+  "upload_type": "software",
+  "description": "SkyShift is an open-source web tool and analysis toolkit for exploring how the sky changes in NASA SPHEREx near-infrared survey images. It selects wavelength-matched SPHEREx exposures of any sky position at four time scales (hours, days, months and a year), reads only the needed pixels from the public archive, and presents them as blink, slider and difference views with known Solar System objects labelled. A citizen-science mode trains users on planted synthetic movers calibrated by injection-recovery tests before they flag candidates in untouched data.",
+  "creators": [
+    {
+      "name": "Amin, MD. Nurol",
+      "affiliation": "Daffodil International University",
+      "orcid": "0009-0005-8289-7804"
+    }
+  ],
+  "version": "0.1.0",
+  "license": "bsd-3-clause",
+  "access_right": "open",
+  "language": "eng",
+  "keywords": [
+    "SPHEREx",
+    "time-domain astronomy",
+    "Solar System",
+    "asteroids",
+    "moving objects",
+    "citizen science",
+    "data visualization"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://doi.org/10.26131/IRSA652",
+      "relation": "references",
+      "resource_type": "dataset"
+    }
+  ],
+  "notes": "Includes the experiment scripts and findings behind the design (experiments/). Developed with generative-AI assistance; see AI_USE.md."
+}

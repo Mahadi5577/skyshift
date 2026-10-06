@@ -1,0 +1,37 @@
+# Citation metadata. GitHub shows a "Cite this repository" button from it, and Zenodo reads it
+# when minting a DOI (via .zenodo.json, generated from this file by scripts/release_check.py).
+cff-version: 1.2.0
+message: "If you use SkyShift, please cite it using the metadata below."
+type: software
+title: "SkyShift: zoom through time in NASA SPHEREx sky images"
+version: 0.1.0
+date-released: 2026-10-06
+license: BSD-3-Clause
+repository-code: "https://github.com/Mahadi5577/skyshift"
+abstract: >-
+  SkyShift is an open-source web tool and analysis toolkit for exploring how the sky changes in
+  NASA SPHEREx near-infrared survey images. It selects wavelength-matched SPHEREx exposures of any
+  sky position at four time scales (hours, days, months and a year), reads only the needed pixels
+  from the public archive, and presents them as blink, slider and difference views with known
+  Solar System objects labelled. A citizen-science mode trains users on planted synthetic movers
+  calibrated by injection-recovery tests before they flag candidates in untouched data.
+keywords:
+  - SPHEREx
+  - time-domain astronomy
+  - Solar System
+  - asteroids
+  - moving objects
+  - citizen science
+  - data visualization
+authors:
+  - given-names: "MD. Nurol"
+    family-names: "Amin"
+    affiliation: "Daffodil International University"
+    email: "amin15-5577@diu.edu.bd"
+    orcid: "https://orcid.org/0009-0005-8289-7804"
+references:
+  - type: data
+    title: "SPHEREx Quick Release 2 (QR2) spectral images"
+    doi: 10.26131/IRSA652
+    authors:
+      - name: "NASA/IPAC Infrared Science Archive"

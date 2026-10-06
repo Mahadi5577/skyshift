@@ -1,0 +1,10 @@
+astropy==8.0.1
+astroquery==0.4.11
+fsspec==2026.9.0
+matplotlib==3.11.2
+numpy==2.5.3
+pillow==12.3.0
+pyvo==1.9.1
+reproject==0.21.0
+requests==2.34.2
+s3fs==2026.9.0
