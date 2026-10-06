@@ -9,7 +9,7 @@
       "orcid": "0009-0005-8289-7804"
     }
   ],
-  "version": "0.1.0",
+  "version": "0.2.0",
   "license": "bsd-3-clause",
   "access_right": "open",
   "language": "eng",
@@ -29,5 +29,5 @@
       "resource_type": "dataset"
     }
   ],
-  "notes": "Includes the experiment scripts and findings behind the design (experiments/). Developed with generative-AI assistance; see AI_USE.md."
+  "notes": "Online showcase: https://mahadi5577.github.io/skyshift/. Includes the experiment scripts and findings behind the design (experiments/). Developed with generative-AI assistance; see AI_USE.md."
 }

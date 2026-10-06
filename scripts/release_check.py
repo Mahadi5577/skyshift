@@ -52,7 +52,8 @@ def zenodo_metadata(cff):
         "language": "eng",
         "keywords": cff.get("keywords", []),
         "related_identifiers": RELATED,
-        "notes": "Includes the experiment scripts and findings behind the design (experiments/). "
+        "notes": (f"Online showcase: {cff['url']}. " if cff.get("url") else "")
+                 + "Includes the experiment scripts and findings behind the design (experiments/). "
                  "Developed with generative-AI assistance; see AI_USE.md.",
     }
 

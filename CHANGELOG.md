@@ -3,9 +3,9 @@
 Format: one section per release, newest first. `scripts/release_check.py` copies the section for
 the version being released into cache/release-notes-X.Y.Z.md for the optional GitHub release.
 
-## [Unreleased]
+## [0.2.0] - 2026-10-06
 
-Getting ready for a public server (planned as 0.2.0).
+Ready for public use: an online showcase, and a server that can run as a public website.
 
 ### Public server
 - **Docker image** (`Dockerfile`) and `docs/DEPLOY.md`: Hugging Face Space (deployed by a manual

@@ -4,11 +4,12 @@ cff-version: 1.2.0
 message: "If you use SkyShift, please cite it using the metadata below."
 type: software
 title: "SkyShift: zoom through time in NASA SPHEREx sky images"
-version: 0.1.0
+version: 0.2.0
 doi: 10.5281/zenodo.23181747
 date-released: 2026-10-06
 license: BSD-3-Clause
 repository-code: "https://github.com/Mahadi5577/skyshift"
+url: "https://mahadi5577.github.io/skyshift/"
 identifiers:
   - type: doi
     value: 10.5281/zenodo.23181747
