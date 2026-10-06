@@ -30,23 +30,36 @@ Then open **http://localhost:8000**.
 **Before any demo, run the precache.** On a connection far from the US servers, a fresh sky position takes 10-40 s to
 download; cached ones open instantly, and Hunt mode only uses cached patches.
 
+### Put it online
+The [`Dockerfile`](Dockerfile) runs SkyShift as a public website, with per-visitor rate limits,
+a cap on parallel downloads, a cache size limit and a Hunt database that survives restarts.
+[docs/DEPLOY.md](docs/DEPLOY.md) covers a free Hugging Face Space (deployed from GitHub
+Actions, so nothing large is uploaded from your computer), any Docker host, and every setting.
+
 ## What's inside
 
 ```
 backend/
-  app.py         FastAPI routes + serves web/
+  app.py         FastAPI routes + serves web/; start-up tasks, health check
+  config.py      settings from environment variables
   spherex.py     SPHEREx search (IRSA SIA), wavelength-at-target, S3 byte-range stamp reads
-  sequences.py   time-zoom frame selection, parallel download, reprojection, disk cache
+  sequences.py   time-zoom frame selection, parallel download, reprojection, disk cache + pruning
   known.py       known asteroids/comets per frame (IMCCE SkyBoT)
-  hunt.py        practice rounds with planted fakes, skill scores, candidate board
+  hunt.py        rounds with server-planted fakes, skill scores, candidate board (SQLite)
+  limits.py      per-client rate limits
+  precache.py    tour + Hunt downloads (scripts/precache.py, or at server start)
+  backup.py      optional Hunt database backup to a Hugging Face dataset
   tour.py        guided tour stops
   wave_tables/   SPHEREx WCS-WAVE lookup tables (one per detector)
 web/             single-page app (no build step): index.html, css/, js/
-scripts/precache.py
+scripts/         precache.py, release_check.py
 tests/           pytest suite (offline; SKYSHIFT_NETWORK=1 adds a live IRSA test)
 experiments/     standalone SPHEREx experiments behind the design + FINDINGS.md
-docs/            release checklist, outreach drafts, images
+docs/            deployment, release checklist, outreach drafts, images
+deploy/          Hugging Face Space card
+Dockerfile       server image
 cache/           everything downloaded (safe to delete; rebuilt on demand)
+data/            Hunt database (keep it)
 ```
 
 ### How a view is built
@@ -73,9 +86,11 @@ cache/           everything downloaded (safe to delete; rebuilt on demand)
 | GET | `/api/sequence/{id}/frame/{i}` | Raw little-endian float32, n x n, row 0 = south |
 | GET | `/api/sequence/{id}/known` | Known objects with pixel positions per frame |
 | GET | `/api/tour` | Tour stops |
-| GET | `/api/hunt/round?player=` | New round (practice rounds include the fake's parameters) |
-| POST | `/api/hunt/answer` | `{round_id, click: [x, y] or null}` -> result, skill |
+| GET | `/api/hunt/round?player=&key=` | New round: frame times only, never the fake's position |
+| GET | `/api/hunt/round/{id}/frame/{i}` | A round's frame, fake already planted in practice rounds |
+| POST | `/api/hunt/answer` | `{round_id, click: [x, y] or null}` -> result, skill, the fake's track |
 | GET | `/api/hunt/board` | Real-round flags grouped and ranked |
+| GET | `/api/health` | Version, downloads in progress, cache size, Hunt pool |
 
 Interactive docs: http://localhost:8000/docs
 
@@ -94,10 +109,13 @@ From the experiments in [`experiments/`](experiments/) (all numbers in
 - **Hunt data:** the game only uses sequences already in `cache/`. Run the precache first.
 - **Bright objects** leave false-change patterns in Difference mode. They are dimmed, not
   removed.
-- **Hunt scoring is client-trusting:** fake positions are sent to the browser. That's fine
-  for a demo, but not cheat-proof.
-- **Sky map console noise:** the sky map (Aladin Lite) tries IRSA's 2MASS mirror first, which
-  blocks browser requests (CORS errors in the console), then falls back to another mirror.
+- **Hunt is hard to cheat, not cheat-proof:** the server plants the fakes and reveals their
+  track only after an answer, and a player name belongs to the browser that first used it.
+  But anyone can make new names, and a determined script could rebuild the clean frames from
+  the public archive and difference them. Treat the board as a list of leads to check.
+- **Sky map:** the default background is the SPHEREx QR2 all-sky colour map that CDS builds
+  from the six detectors. With the 2MASS background, Aladin Lite first tries IRSA's mirror,
+  which blocks browser requests (CORS errors in the console), then falls back to another one.
 - **Data release:** only QR2 is used (`spherex_qr2`). QR3 was still empty at test positions.
 
 ## Development

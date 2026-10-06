@@ -107,6 +107,8 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .map-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .aladin { width: 100%; height: 260px; border-radius: 8px; overflow: hidden; background: #000; }
 .hint { color: var(--muted); font-size: 0.82rem; margin-top: 8px; }
+.map-survey { display: flex; align-items: center; gap: 8px; }
+.map-survey select { flex: 1; padding: 3px 6px; font-size: 0.82rem; }
 
 /* viewer card */
 .target-line { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; }

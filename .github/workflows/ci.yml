@@ -26,3 +26,19 @@ jobs:
           mkdir -p /tmp/js
           for f in web/js/*.js; do cp "$f" "/tmp/js/$(basename "$f" .js).mjs"; done
           for f in /tmp/js/*.mjs; do node --check "$f"; done
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the server image
+        run: docker build -t skyshift .
+      - name: Server starts and answers
+        run: |
+          docker run -d --name skyshift -p 7860:7860 -e SKYSHIFT_PRECACHE=0 skyshift
+          for i in $(seq 30); do curl -fs http://localhost:7860/api/health && break; sleep 2; done
+          curl -fs http://localhost:7860/api/health | grep '"status":"ok"'
+          curl -fs http://localhost:7860/ | grep -q SkyShift
+      - name: Server log
+        if: always()
+        run: docker logs skyshift

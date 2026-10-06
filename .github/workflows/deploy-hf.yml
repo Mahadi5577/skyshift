@@ -1,0 +1,41 @@
+name: Deploy to Hugging Face
+
+# Manual: Actions tab -> "Deploy to Hugging Face" -> Run workflow. The upload runs on GitHub's
+# servers, so nothing large leaves your own computer. Needs the repository secret HF_TOKEN
+# (a Hugging Face write token) and the repository variable HF_SPACE (e.g. your-name/skyshift).
+# Full steps: docs/DEPLOY.md.
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: vars.HF_SPACE != ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Stage the Space (app code only, plus the Space's own README)
+        run: |
+          mkdir space
+          cp -r backend web scripts Dockerfile .dockerignore requirements.txt requirements-server.txt LICENSE space/
+          cp deploy/huggingface/README.md space/README.md
+          find space -name __pycache__ -prune -exec rm -rf {} +
+      - name: Upload
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE: ${{ vars.HF_SPACE }}
+        run: |
+          pip install huggingface_hub==2.1.1
+          python - <<'EOF'
+          import os
+          from huggingface_hub import HfApi
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          space = os.environ["HF_SPACE"]
+          api.create_repo(space, repo_type="space", space_sdk="docker", exist_ok=True)
+          api.upload_folder(repo_id=space, repo_type="space", folder_path="space",
+                            delete_patterns=["backend/**", "web/**", "scripts/**"],
+                            commit_message=f"Deploy {os.environ['GITHUB_SHA'][:7]} from GitHub")
+          print(f"Deployed: https://huggingface.co/spaces/{space}")
+          EOF

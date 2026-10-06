@@ -5,7 +5,9 @@ Releases are archived on Zenodo by manual upload, under concept DOI
 **[ZENODO.md](ZENODO.md)**.
 
 ## Every release, in short
-1. Bump `version` and `date-released` in `CITATION.cff`, and add a `CHANGELOG.md` section.
+1. Bump `version` and `date-released` in `CITATION.cff` and `__version__` in
+   `backend/__init__.py`, and turn `CHANGELOG.md`'s "Unreleased" section into the version's
+   section.
 2. Run `python scripts/release_check.py X.Y.Z --write` until it says **Ready** (commit and push
    in between).
 3. `git tag -a vX.Y.Z -m "SkyShift X.Y.Z" && git push origin vX.Y.Z`
@@ -15,8 +17,8 @@ Releases are archived on Zenodo by manual upload, under concept DOI
 6. Record the new version DOI in `CITATION.cff` and `CHANGELOG.md`.
 
 ## What the release check enforces
-- No `TODO` in `CITATION.cff` or `AUTHORS.md`; `CITATION.cff` is valid and has the right
-  version.
+- No `TODO` in `CITATION.cff` or `AUTHORS.md`; `CITATION.cff` is valid, and it and
+  `backend/__init__.py` have the right version.
 - Tests pass; nothing uncommitted or unpushed; the tag doesn't exist yet.
 - The repository is public.
 - Zenodo's GitHub integration is **off** (otherwise a GitHub release would create a duplicate

@@ -73,6 +73,9 @@ def main():
         blockers.append("AUTHORS.md is not filled in and signed")
     if str(cff.get("version")) != args.version:
         blockers.append(f"CITATION.cff version is {cff.get('version')}, not {args.version}")
+    code_version = re.search(r'__version__ = "(.+?)"', (ROOT / "backend" / "__init__.py").read_text()).group(1)
+    if code_version != args.version:
+        blockers.append(f"backend/__init__.py __version__ is {code_version}, not {args.version}")
     released = cff.get("date-released")
     if str(released) != dt.date.today().isoformat():
         warnings.append(f"CITATION.cff date-released is {released}; set it to the release day")

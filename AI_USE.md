@@ -5,7 +5,7 @@ what was done, so disclosures stay accurate. **AI tools are not authors** (see A
 
 ## Tool
 Claude (model Claude Opus 5.5, Anthropic), used through Claude Code in VS Code, from
-5-6 October 2026.
+5 October 2026 (version 0.1.0 and the public-server work after it).
 
 ## What the AI did
 - **Background research:** the challenge rules, SPHEREx data-access documentation (IRSA, the AWS
@@ -16,6 +16,8 @@ Claude (model Claude Opus 5.5, Anthropic), used through Claude Code in VS Code, 
   measured results in `experiments/FINDINGS.md`.
 - **Application (`backend/`, `web/`, `scripts/`):** designed and wrote the code, and ran automated
   API and browser (Playwright/Edge) tests.
+- **Deployment (`Dockerfile`, `deploy/`, `.github/workflows/`):** wrote the server image and
+  the deployment workflow.
 - **Documentation:** wrote the READMEs, guides and this file.
 
 ## What the human team did

@@ -1,7 +1,14 @@
 // Thin wrappers around the SkyShift backend API.
 
-async function call(path, options = {}) {
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function call(path, options = {}, retries = 3) {
   const res = await fetch(path, options);
+  // 503 = the server is at its download limit; it says when to come back.
+  if (res.status === 503 && retries > 0) {
+    await sleep(1000 * Math.min(30, Number(res.headers.get("Retry-After")) || 10));
+    return call(path, options, retries - 1);
+  }
   if (!res.ok) {
     let detail = res.statusText;
     try { detail = (await res.json()).detail ?? detail; } catch { /* not JSON */ }
@@ -13,6 +20,7 @@ async function call(path, options = {}) {
 }
 
 const json = (path, options) => call(path, options).then((r) => r.json());
+const floats = (path) => call(path).then((r) => r.arrayBuffer()).then((b) => new Float32Array(b));
 const post = (path, body) =>
   json(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
 
@@ -23,13 +31,11 @@ export const api = {
   status: (id) => json(`/api/sequence/${id}`),
   known: (id) => json(`/api/sequence/${id}/known`),
   tour: () => json("/api/tour"),
-  huntRound: (player) => json(`/api/hunt/round?player=${encodeURIComponent(player)}`),
+  huntRound: (player, key) => json(`/api/hunt/round?player=${encodeURIComponent(player)}&key=${key}`),
   huntAnswer: (round_id, click) => post("/api/hunt/answer", { round_id, click }),
   board: () => json("/api/hunt/board"),
-  async frame(id, i) {
-    const buf = await (await call(`/api/sequence/${id}/frame/${i}`)).arrayBuffer();
-    return new Float32Array(buf);
-  },
+  frame: (id, i) => floats(`/api/sequence/${id}/frame/${i}`),
+  huntFrame: (roundId, i) => floats(`/api/hunt/round/${roundId}/frame/${i}`),
 };
 
 // Poll a sequence until every frame is ready or failed; calls onFrame(i, data) as each arrives.

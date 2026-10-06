@@ -2,7 +2,11 @@
 rem SkyShift on Windows: first run creates .venv and installs packages, then starts the server.
 rem   run.bat            start on http://localhost:8000
 rem   run.bat precache   download tour + hunt data first (recommended before a demo)
+rem Set SKYSHIFT_HOST=0.0.0.0 to let other computers on your network connect, PORT to change the port.
+setlocal
 cd /d "%~dp0"
+if not defined SKYSHIFT_HOST set SKYSHIFT_HOST=127.0.0.1
+if not defined PORT set PORT=8000
 
 if exist .venv\Scripts\python.exe goto installed
 set PY=
@@ -26,5 +30,5 @@ if errorlevel 1 (
 :installed
 if "%1"=="precache" .venv\Scripts\python scripts\precache.py
 echo.
-echo SkyShift is starting: open http://localhost:8000 in your browser. Press Ctrl+C to stop.
-.venv\Scripts\python -m uvicorn backend.app:app --host 127.0.0.1 --port 8000
+echo SkyShift is starting: open http://localhost:%PORT% in your browser. Press Ctrl+C to stop.
+.venv\Scripts\python -m uvicorn backend.app:app --host %SKYSHIFT_HOST% --port %PORT%

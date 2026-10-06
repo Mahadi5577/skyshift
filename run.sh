@@ -2,8 +2,11 @@
 # SkyShift on macOS / Linux: first run creates .venv and installs packages, then starts the server.
 #   bash run.sh            start on http://localhost:8000
 #   bash run.sh precache   download tour + hunt data first (recommended before a demo)
+# Set SKYSHIFT_HOST=0.0.0.0 to let other computers on your network connect, PORT to change the port.
 set -e
 cd "$(dirname "$0")"
+HOST="${SKYSHIFT_HOST:-127.0.0.1}"
+PORT="${PORT:-8000}"
 
 if [ ! -d .venv ]; then
   PY=""
@@ -20,5 +23,5 @@ fi
 if [ -x .venv/bin/python ]; then VPY=.venv/bin/python; else VPY=.venv/Scripts/python; fi
 
 [ "$1" = "precache" ] && "$VPY" scripts/precache.py
-echo "SkyShift is starting: open http://localhost:8000 in your browser. Press Ctrl+C to stop."
-exec "$VPY" -m uvicorn backend.app:app --host 127.0.0.1 --port 8000
+echo "SkyShift is starting: open http://localhost:$PORT in your browser. Press Ctrl+C to stop."
+exec "$VPY" -m uvicorn backend.app:app --host "$HOST" --port "$PORT"

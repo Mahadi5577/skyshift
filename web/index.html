@@ -47,7 +47,13 @@
             <button id="use-center" class="btn small">Look here</button>
           </div>
           <div id="aladin" class="aladin"></div>
-          <p class="hint">Drag to pan, scroll to zoom, then press <b>Look here</b>. Background: 2MASS near-infrared.</p>
+          <p class="hint">Drag to pan, scroll to zoom, then press <b>Look here</b>.</p>
+          <label class="hint map-survey">Background
+            <select id="map-survey">
+              <option value="CDS/P/SPHEREx/QR2/color">SPHEREx all-sky, 0.75-5 µm</option>
+              <option value="P/2MASS/color">2MASS, 1.2-2.2 µm</option>
+            </select>
+          </label>
         </div>
       </aside>
 

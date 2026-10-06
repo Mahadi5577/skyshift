@@ -7,19 +7,22 @@ north-up grid centred on the target, so blinking and differencing compare like w
 import hashlib
 import json
 import math
+import os
+import shutil
 import threading
+import time
 import warnings
+from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
-from pathlib import Path
 
 import numpy as np
 from astropy.convolution import Gaussian2DKernel, interpolate_replace_nans
 from astropy.wcs import WCS
 from reproject import reproject_interp
 
-from . import spherex
+from . import config, spherex
 
-CACHE = Path(__file__).resolve().parent.parent / "cache"
+CACHE = config.CACHE
 ZOOMS = ("hours", "days", "months", "year")
 # Hours mode is about motion, so it accepts a wider wavelength spread and balances each frame.
 TOLERANCE = {"hours": 0.10, "days": 0.02, "months": 0.02, "year": 0.02}
@@ -27,9 +30,17 @@ MAX_ENTRIES = 16
 MEMBERS_PER_PASS = 5
 
 _pool = ThreadPoolExecutor(8)  # more than 8 parallel S3 reads gave no gain in the sandbox
+_searches = threading.BoundedSemaphore(4)  # archive searches at once; each takes ~1.5-12 s
 _lock = threading.Lock()
-_sequences = {}
-_coverage = {}
+_create_lock = threading.Lock()  # one thread at a time writes a new sequence's meta.json
+_sequences = {}  # in memory: the ones downloading plus up to KEEP_IN_MEMORY idle ones
+_coverage = OrderedDict()
+KEEP_IN_MEMORY = 256
+COVERAGE_IN_MEMORY = 128
+
+
+class Busy(RuntimeError):
+    """The server is at its download or search limit; the client should retry shortly."""
 
 
 def _hash(*parts):
@@ -42,9 +53,14 @@ def _read_json(path):
 
 def _write_json(path, obj):
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
+    tmp = path.with_name(f"{path.name}.{threading.get_ident()}.tmp")
     tmp.write_text(json.dumps(obj))
-    tmp.replace(path)
+    try:
+        tmp.replace(path)
+    except PermissionError:  # Windows: another thread holds the same file; its content is the same
+        tmp.unlink(missing_ok=True)
+        if not path.exists():
+            raise
 
 
 # --- coverage ----------------------------------------------------------------------------------
@@ -52,12 +68,19 @@ def coverage(ra, dec, collection="spherex_qr2"):
     """All images at (ra, dec) plus a summary: passes and a suggested wavelength. Cached on disk."""
     ra, dec = round(ra % 360, 5), round(dec, 5)
     key = _hash("cov", ra, dec, collection)
-    if key in _coverage:
-        return _coverage[key]
+    with _lock:
+        if key in _coverage:
+            _coverage.move_to_end(key)
+            return _coverage[key]
     path = CACHE / "coverage" / f"{key}.json"
     cov = _read_json(path)
     if cov is None:
-        images = spherex.search(ra, dec, collection)
+        if not _searches.acquire(timeout=60):
+            raise Busy("too many archive searches are running: try again in a minute")
+        try:
+            images = spherex.search(ra, dec, collection)
+        finally:
+            _searches.release()
         passes = []
         for p in sorted({im["pass"] for im in images}):
             members = [im for im in images if im["pass"] == p]
@@ -66,7 +89,10 @@ def coverage(ra, dec, collection="spherex_qr2"):
         cov = {"ra": ra, "dec": dec, "collection": collection, "images": images, "passes": passes}
         _write_json(path, cov)
     cov["suggested"] = {z: suggest_wave(cov["images"], z) for z in ZOOMS}
-    _coverage[key] = cov
+    with _lock:
+        _coverage[key] = cov
+        while len(_coverage) > COVERAGE_IN_MEMORY:
+            _coverage.popitem(last=False)
     return cov
 
 
@@ -173,6 +199,7 @@ def frame(im, ra, dec, n):
     """One exposure on the common grid, cached as .npy. Hidden pixels are filled from neighbours."""
     path = CACHE / "frames" / f"{_hash(im['key'], f'{ra:.5f}', f'{dec:.5f}', n)}.npy"
     if path.exists():
+        os.utime(path)  # recently used: keep it when the cache is pruned
         return np.load(path)
     half = math.ceil(n / math.sqrt(2)) + 3  # a rotated stamp must still cover the whole grid
     img, w = spherex.read_stamp(im["key"], ra, dec, half)
@@ -187,8 +214,31 @@ def frame(im, ra, dec, n):
 
 
 # --- sequence jobs -----------------------------------------------------------------------------
-def start(ra, dec, zoom, wave=None, n=48, t_min=None, t_max=None, tol=None, collection="spherex_qr2"):
-    """Create (or reuse) a sequence and start fetching its frames in the background."""
+def _downloading(seq):
+    return any(s in ("pending", "loading") for s in seq["status"])
+
+
+def downloading():
+    """How many sequences are downloading now."""
+    with _lock:
+        return sum(map(_downloading, _sequences.values()))
+
+
+def _remember(seq_id, seq):
+    """Keep a sequence in memory; forget the longest-idle finished ones beyond KEEP_IN_MEMORY.
+    Call with _lock held. Forgotten sequences are reloaded from disk by get()."""
+    _sequences[seq_id] = seq
+    extra = len(_sequences) - KEEP_IN_MEMORY
+    if extra > 0:
+        idle = sorted((s["used"], k) for k, s in _sequences.items() if not _downloading(s))
+        for _, k in idle[:extra]:
+            del _sequences[k]
+
+
+def start(ra, dec, zoom, wave=None, n=48, t_min=None, t_max=None, tol=None, collection="spherex_qr2",
+          max_active=None):
+    """Create (or reuse) a sequence and start fetching its frames in the background.
+    With max_active, raise Busy instead of starting a download when that many are already running."""
     if zoom not in ZOOMS:
         raise ValueError(f"zoom must be one of {ZOOMS}")
     cov = coverage(ra, dec, collection)
@@ -200,31 +250,44 @@ def start(ra, dec, zoom, wave=None, n=48, t_min=None, t_max=None, tol=None, coll
     with _lock:
         if seq_id in _sequences:
             return _sequences[seq_id]
+    path = CACHE / "sequences" / seq_id / "meta.json"
+    with _create_lock:
+        meta = _read_json(path)
+        if meta is None:
+            entries = select(cov["images"], wave, zoom, t_min, t_max, tol)
+            if not entries:
+                raise LookupError("no frames at this wavelength and time range")
+            meta = {"id": seq_id, "ra": ra, "dec": dec, "zoom": zoom, "wave": wave, "n": n,
+                    "scale": spherex.PIXEL_SCALE, "t_min": t_min, "t_max": t_max, "tol": tol,
+                    "balanced": zoom == "hours" or (tol or 0) > 0.03,
+                    "entries": [{k: v for k, v in e.items() if k != "members"}
+                                | {"members": [m["id"] for m in e["members"]]} for e in entries]}
+            _write_json(path, meta)
+    return _activate(seq_id, meta, lambda: cov["images"], max_active)
+
+
+def _activate(seq_id, meta, images, max_active=None):
+    """Put a sequence in memory and queue downloads of its missing frames. `images` is called
+    only if frames are missing; it returns the coverage images the entries were chosen from."""
     seq_dir = CACHE / "sequences" / seq_id
-    meta = _read_json(seq_dir / "meta.json")
-    if meta is None:
-        entries = select(cov["images"], wave, zoom, t_min, t_max, tol)
-        if not entries:
-            raise LookupError("no frames at this wavelength and time range")
-        meta = {"id": seq_id, "ra": ra, "dec": dec, "zoom": zoom, "wave": wave, "n": n,
-                "scale": spherex.PIXEL_SCALE, "t_min": t_min, "t_max": t_max, "tol": tol,
-                "balanced": zoom == "hours" or (tol or 0) > 0.03,
-                "entries": [{k: v for k, v in e.items() if k != "members"}
-                            | {"members": [m["id"] for m in e["members"]]} for e in entries]}
-        _write_json(seq_dir / "meta.json", meta)
-        member_lookup = {m["id"]: m for e in entries for m in e["members"]}
-    else:
-        member_lookup = {im["id"]: im for im in cov["images"]}
-    seq = {"meta": meta, "status": ["pending"] * len(meta["entries"]), "errors": {}, "dir": seq_dir}
-    with _lock:
-        if seq_id in _sequences:
-            return _sequences[seq_id]
-        _sequences[seq_id] = seq
-    for i, e in enumerate(meta["entries"]):
+    seq = {"meta": meta, "status": ["pending"] * len(meta["entries"]), "errors": {}, "dir": seq_dir,
+           "used": time.time()}
+    todo = []
+    for i in range(len(meta["entries"])):
         if (seq_dir / f"{i}.npy").exists():
             seq["status"][i] = "ready"
         else:
-            _pool.submit(_build_entry, seq, i, [member_lookup[m] for m in e["members"]])
+            todo.append(i)
+    lookup = {im["id"]: im for im in images()} if todo else {}
+    with _lock:
+        if seq_id in _sequences:
+            return _sequences[seq_id]
+        if todo and max_active and sum(map(_downloading, _sequences.values())) >= max_active:
+            raise Busy("the server is busy downloading other views: try again shortly")
+        _remember(seq_id, seq)
+    for i in todo:
+        members = [lookup[m] for m in meta["entries"][i]["members"] if m in lookup]
+        _pool.submit(_build_entry, seq, i, members)
     return seq
 
 
@@ -239,7 +302,7 @@ def _build_entry(seq, i, members):
             errors.append(f"{im['id']}: {e}")
     if not arrays:
         seq["status"][i] = "failed"
-        seq["errors"][i] = "; ".join(errors)[:300]
+        seq["errors"][i] = "; ".join(errors)[:300] or "its images are no longer listed by the archive"
         return
     arr = arrays[0] if len(arrays) == 1 else np.nanmedian(np.stack(arrays), axis=0).astype(np.float32)
     np.save(seq["dir"] / f"{i}.npy", arr)
@@ -253,8 +316,9 @@ def get(seq_id):
         meta = _read_json(CACHE / "sequences" / seq_id / "meta.json")
         if meta is None:
             return None
-        seq = start(meta["ra"], meta["dec"], meta["zoom"], meta["wave"], meta["n"],
-                    meta["t_min"], meta["t_max"], meta.get("tol"))
+        # Load by id: re-deriving the id from the stored parameters is not guaranteed to match.
+        seq = _activate(seq_id, meta, lambda: coverage(meta["ra"], meta["dec"])["images"])
+    seq["used"] = time.time()
     return seq
 
 
@@ -262,19 +326,85 @@ def summary(seq):
     return seq["meta"] | {"status": seq["status"], "errors": seq["errors"]}
 
 
-def entry_bytes(seq, i):
+def entry_array(seq, i):
     path = seq["dir"] / f"{i}.npy"
     if seq["status"][i] != "ready" or not path.exists():
         return None
-    return np.load(path).astype("<f4").tobytes()
+    return np.load(path)
 
 
-def cached_sequences(min_ready=5, zooms=("hours", "days")):
-    """Fully downloaded sequences on disk, for Hunt mode."""
+def entry_bytes(seq, i):
+    arr = entry_array(seq, i)
+    return None if arr is None else arr.astype("<f4").tobytes()
+
+
+_hunt_pool = {"time": 0.0, "metas": []}
+
+
+def cached_sequences(max_age=60):
+    """Fully downloaded Hours and Days sequences on disk (5+ frames), for Hunt mode.
+    The disk is rescanned at most every max_age seconds."""
+    if time.time() - _hunt_pool["time"] < max_age:
+        return _hunt_pool["metas"]
     out = []
     for meta_path in (CACHE / "sequences").glob("*/meta.json"):
         meta = _read_json(meta_path)
         ready = sum((meta_path.parent / f"{i}.npy").exists() for i in range(len(meta["entries"])))
-        if meta["zoom"] in zooms and ready >= min_ready and ready == len(meta["entries"]):
+        if meta["zoom"] in ("hours", "days") and ready >= 5 and ready == len(meta["entries"]):
             out.append(meta)
+    _hunt_pool.update(time=time.time() if out else 0.0, metas=out)
     return out
+
+
+# --- cache size --------------------------------------------------------------------------------
+def pin(seq_ids):
+    """Never prune these sequences (tour stops and precached Hunt patches)."""
+    path = CACHE / "pinned.json"
+    _write_json(path, sorted(set(_read_json(path) or []) | set(seq_ids)))
+
+
+def _bytes(path):
+    if path.is_dir():
+        return sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
+    return path.stat().st_size
+
+
+last_size = {"bytes": None, "time": None}
+
+
+def prune_cache(max_bytes, keep=0.9):
+    """If the cache is over max_bytes, delete the least recently used frames, searches and
+    sequences until it is under keep * max_bytes. Pinned and downloading sequences stay.
+    Returns {"before", "after"} in bytes and the number of items deleted."""
+    total = _bytes(CACHE) if CACHE.exists() else 0
+    before, deleted = total, 0
+    if max_bytes and total > max_bytes:
+        pinned = set(_read_json(CACHE / "pinned.json") or [])
+        with _lock:
+            mem = dict(_sequences)
+        items = []  # (last used, path)
+        for sub, pattern in (("frames", "*.npy"), ("coverage", "*.json")):
+            items += [(f.stat().st_mtime, f) for f in (CACHE / sub).glob(pattern)]
+        for d in (CACHE / "sequences").glob("*"):
+            if d.name in pinned or not (d / "meta.json").exists():
+                continue
+            seq = mem.get(d.name)
+            items.append((max((d / "meta.json").stat().st_mtime, seq["used"] if seq else 0), d))
+        for _, path in sorted(items, key=lambda t: t[0]):
+            if total <= keep * max_bytes:
+                break
+            if path.is_dir():
+                with _lock:
+                    seq = _sequences.get(path.name)
+                    if seq is not None and _downloading(seq):
+                        continue
+                    _sequences.pop(path.name, None)
+                size = _bytes(path)
+                shutil.rmtree(path, ignore_errors=True)
+            else:
+                size = path.stat().st_size
+                path.unlink(missing_ok=True)
+            total -= size
+            deleted += 1
+    last_size.update(bytes=total, time=time.time())
+    return {"before": before, "after": total, "deleted": deleted}

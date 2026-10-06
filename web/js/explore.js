@@ -241,11 +241,13 @@ function setMode(m) {
 
 function initAladin() {
   const start = () => A.init.then(() => {
+    // SPHEREx QR2 all-sky colour map (HiPS by CDS from the six detectors); 2MASS as an alternative.
     aladin = A.aladin("#aladin", {
-      survey: "P/2MASS/color", fov: 1.5, target: "202.4696 47.1952", showReticle: true,
+      survey: $("#map-survey").value, fov: 1.5, target: "202.4696 47.1952", showReticle: true,
       showLayersControl: false, showGotoControl: false, showFullscreenControl: false,
       showFrame: false, showCooGrid: false,
     });
+    $("#map-survey").onchange = (e) => aladin.setImageSurvey(e.target.value);
     overlay = A.graphicOverlay({ color: "#ffb547", lineWidth: 2 });
     aladin.addOverlay(overlay);
     moveMap();

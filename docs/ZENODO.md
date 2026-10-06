@@ -17,8 +17,9 @@ safe; only GitHub releases trigger Zenodo. `scripts/release_check.py` blocks a r
 Zenodo's webhook is installed.
 
 ## Publishing a new version (e.g. 0.2.0)
-1. Update `version` and `date-released` in `CITATION.cff`, and add `## [0.2.0] - YYYY-MM-DD`
-   to `CHANGELOG.md`.
+1. Update `version` and `date-released` in `CITATION.cff` and `__version__` in
+   `backend/__init__.py`, and rename `CHANGELOG.md`'s `## [Unreleased]` to
+   `## [0.2.0] - YYYY-MM-DD`.
 2. `python scripts/release_check.py 0.2.0 --write`. Fix every BLOCK, commit and push, then
    run it again until it says **Ready**.
 3. Tag and make the archive:

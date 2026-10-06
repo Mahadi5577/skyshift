@@ -5,6 +5,7 @@ reported on-sky rates (arcsec/hour, RA rate already multiplied by cos Dec).
 """
 import json
 import math
+import threading
 
 import astropy.units as u
 import numpy as np
@@ -15,6 +16,7 @@ from astroquery.imcce import Skybot
 from . import sequences
 
 V_LIMIT = 19.0  # fainter than this is invisible in single SPHEREx frames anyway
+_skybot = threading.BoundedSemaphore(2)  # be gentle with the IMCCE service
 
 
 def _val(q, unit=None):
@@ -50,6 +52,8 @@ def known_objects(seq):
         t_mid = float(np.mean([mjds[i] for i in idx]))
         span_h = (max(mjds[i] for i in idx) - min(mjds[i] for i in idx)) * 24 / 2
         radius = half_diag + 60 * max(span_h, 1)  # up to 60"/h main-belt rates
+        if not _skybot.acquire(timeout=60):
+            raise sequences.Busy("too many known-object lookups are running: try again in a minute")
         try:
             res = Skybot.cone_search(SkyCoord(ra0, dec0, unit="deg"), radius * u.arcsec,
                                      Time(t_mid, format="mjd"), location="500")
@@ -58,6 +62,8 @@ def known_objects(seq):
             if "No solar system object" in str(e) or "No table found" in str(e):
                 continue
             raise
+        finally:
+            _skybot.release()
         for r in res:
             v = _val(r["V"]) if r["V"] is not np.ma.masked else 99
             if v > V_LIMIT:

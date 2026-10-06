@@ -1,0 +1,8 @@
+# Only backend/, web/, scripts/ and the requirements files go into the image.
+*
+!backend
+!web
+!scripts
+!requirements.txt
+!requirements-server.txt
+**/__pycache__

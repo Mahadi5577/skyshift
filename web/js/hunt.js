@@ -1,5 +1,6 @@
 // Hunt tab: practice rounds with a planted fake mover, real rounds that feed the Candidates board.
-import { api, loadSequence } from "./api.js";
+// The server plants the fake into the frames it sends; the browser learns its track only after answering.
+import { api } from "./api.js";
 import { Viewer } from "./viewer.js";
 
 const $ = (s) => document.querySelector(s);
@@ -7,6 +8,7 @@ const LEVELS = [12, 8, 6, 5]; // must match backend/hunt.py
 
 let viewer;
 let player = "";
+let key = "";
 let round = null;
 let answered = false;
 let abort = null;
@@ -38,21 +40,14 @@ function stats(skill, streak) {
   $("#st-level").textContent = streak === undefined ? "-" : `S/N ${LEVELS[Math.min(Math.floor(streak / 3), LEVELS.length - 1)]}`;
 }
 
-// Add a Gaussian "mover" to one frame, scaled to that frame's own noise.
-function plant(data, n, x, y, snr, sigma) {
-  const vals = Array.from(data).filter(Number.isFinite).sort((a, b) => a - b);
-  const med = vals[vals.length >> 1];
-  const dev = vals.map((v) => Math.abs(v - med)).sort((a, b) => a - b);
-  const amp = snr * 1.4826 * dev[dev.length >> 1];
-  const out = new Float32Array(data);
-  const r = Math.ceil(sigma * 4);
-  for (let row = Math.max(0, Math.floor(y - r)); row <= Math.min(n - 1, Math.ceil(y + r)); row += 1) {
-    for (let col = Math.max(0, Math.floor(x - r)); col <= Math.min(n - 1, Math.ceil(x + r)); col += 1) {
-      const d2 = (col - x) ** 2 + (row - y) ** 2;
-      out[row * n + col] += amp * Math.exp(-d2 / (2 * sigma * sigma));
-    }
+// A random key kept in this browser: the server gives a player name to the first key that uses it.
+function playerKey() {
+  let k = store("skyshift-player-key");
+  if (!k) {
+    k = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join("");
+    store("skyshift-player-key", k);
   }
-  return out;
+  return k;
 }
 
 async function nextRound() {
@@ -65,37 +60,39 @@ async function nextRound() {
   viewer.reset(0, []);
   msg("Finding a patch of sky...", true);
   try {
-    round = await api.huntRound(player);
+    round = await api.huntRound(player, key);
   } catch (e) {
     msg(e.status === 404
       ? "Hunt needs downloaded sky patches first. Open a few places in Explore with the Hours or Days zoom (or run scripts/precache.py), then come back."
-      : `Error: ${e.message}`);
+      : e.status === 403 ? "That player name is already taken on this server. Please pick another one."
+        : `Error: ${e.message}`);
     return;
   }
   stats(round.skill, round.streak);
   const badge = $("#hunt-badge");
   badge.classList.remove("hidden");
   badge.className = `badge ${round.practice ? "practice" : "real"}`;
-  badge.textContent = round.practice ? `Practice: a fake mover is hidden here (S/N ${round.fake.snr})` : "Real data: anything you find is a candidate";
+  badge.textContent = round.practice ? `Practice: a fake mover is hidden here (S/N ${round.snr})` : "Real data: anything you find is a candidate";
 
-  const seq = await api.status(round.seq_id);
-  viewer.reset(seq.n, seq.entries);
+  const { signal } = abort;
+  viewer.reset(round.n, round.entries);
   viewer.balance = true;
   viewer.showKnown = false;
-  const t = seq.entries.map((e) => e.mjd);
-  const t0 = Math.min(...t);
-  const span = Math.max(...t) - t0 || 1;
   msg("Loading frames...", true);
-  await loadSequence(seq, (i, data) => {
-    if (data && round.fake) {
-      const f = round.fake;
-      const k = (t[i] - t0) / span;
-      data = plant(data, seq.n, f.x0 + f.dx * k, f.y0 + f.dy * k, f.snr, f.psf_sigma);
-    }
-    viewer.setFrame(i, data);
-    if (viewer.readyCount()) msg("");
-  }, { signal: abort.signal });
-  if (!abort.signal.aborted) $("#hunt-none").disabled = false;
+  await Promise.all(round.entries.map((_, i) => api.huntFrame(round.round_id, i)
+    .catch(() => null)
+    .then((data) => {
+      if (signal.aborted) return;
+      viewer.setFrame(i, data);
+      if (viewer.readyCount()) msg("");
+    })));
+  if (signal.aborted) return;
+  if (viewer.readyCount()) {
+    $("#hunt-none").disabled = false;
+  } else {
+    msg("These frames could not be loaded. Press Next round.");
+    $("#hunt-next").disabled = false;
+  }
 }
 
 async function answer(click) {
@@ -134,6 +131,7 @@ export function initHunt() {
   viewer = new Viewer($("#hunt-viewer"), { onClick: ({ x, y }) => answer([x, y]) });
   viewer.fps = 3;
   player = store("skyshift-player") || "";
+  key = playerKey();
   $("#player").value = player;
   $("#hunt-start").onsubmit = (e) => {
     e.preventDefault();
